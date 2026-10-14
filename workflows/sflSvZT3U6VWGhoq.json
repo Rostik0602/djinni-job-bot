@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-14T18:35:06.259Z",
+  "updatedAt": "2026-10-14T19:41:45.277Z",
   "createdAt": "2026-10-14T15:06:26.281Z",
   "id": "sflSvZT3U6VWGhoq",
   "name": "djinni-to-telegram",
@@ -115,6 +115,29 @@
       "parameters": {
         "chatId": "5456346129",
         "text": "={{ $json.text }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✅ Відгукнувся",
+                    "additionalFields": {
+                      "callback_data": "=applied:{{ $json.id }}"
+                    }
+                  },
+                  {
+                    "text": "❌ Пропустити",
+                    "additionalFields": {
+                      "callback_data": "=skipped:{{ $json.id }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
         "additionalFields": {
           "appendAttribution": false,
           "parse_mode": "HTML"
@@ -359,14 +382,14 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "b44a36fd-8d41-41a6-80ac-63f986a45af6",
-  "activeVersionId": "43f81664-3759-4247-8fc8-1b7f71ff78a7",
-  "versionCounter": 59,
+  "versionId": "1b490501-39a8-4ec2-8ba2-13296854fbf6",
+  "activeVersionId": "1b490501-39a8-4ec2-8ba2-13296854fbf6",
+  "versionCounter": 77,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],
   "versionMetadata": {
-    "name": null,
-    "description": null
+    "name": "Version 1b490501",
+    "description": ""
   }
 }
