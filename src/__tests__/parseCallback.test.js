@@ -66,4 +66,42 @@ describe('parseCallback', () => {
     expect(callback.chatId).toBeNull();
     expect(callback.messageId).toBeNull();
   });
+
+  test.each([
+    ['пробел после', 'applied:852334 '],
+    ['перевод строки после', 'applied:852334\n'],
+    ['заглавные', 'APPLIED:852334'],
+    ['отрицательный номер', 'applied:-5'],
+    ['дробный номер', 'skipped:1.5'],
+    ['два двоеточия', 'applied::852334'],
+    ['без двоеточия', 'applied852334'],
+  ])('битые данные: %s — null', (_, data) => {
+    expect(parseCallback(makeUpdate(data))).toBeNull();
+  });
+
+  test.each([null, 123, {}, [], true])('data не строка (%p) — null', (data) => {
+    expect(parseCallback(makeUpdate(data))).toBeNull();
+  });
+
+  test('callback_query null, строка или {} — null', () => {
+    expect(parseCallback({ update_id: 1, callback_query: null })).toBeNull();
+    expect(parseCallback({ update_id: 1, callback_query: 'x' })).toBeNull();
+    expect(parseCallback({ update_id: 1, callback_query: {} })).toBeNull();
+  });
+
+  test('не объект на входе не роняет функцию', () => {
+    expect(parseCallback('applied:1')).toBeNull();
+    expect(parseCallback(42)).toBeNull();
+    expect(parseCallback([])).toBeNull();
+  });
+
+  test('message без chat — chatId null, messageId сохраняется', () => {
+    const cb = parseCallback(makeUpdate('applied:1', { message: { message_id: 7 } }));
+    expect(cb.chatId).toBeNull();
+    expect(cb.messageId).toBe(7);
+  });
+
+  test('номер с ведущими нулями остаётся строкой', () => {
+    expect(parseCallback(makeUpdate('skipped:00123')).vacancyId).toBe('00123');
+  });
 });

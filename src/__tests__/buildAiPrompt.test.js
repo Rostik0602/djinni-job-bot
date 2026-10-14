@@ -43,4 +43,31 @@ describe('buildAiPrompt', () => {
   test('в профиле нет личных данных: почты, телефонов, ссылок', () => {
     expect(PROFILE).not.toMatch(/@|https?:|www\.|github|linkedin|t\.me|\+\d{2}/i);
   });
+
+  test('название обрезается по краям пробелов', () => {
+    expect(buildAiPrompt({ ...vacancy, title: '  QA  ' })).toContain('Title: QA\n');
+  });
+
+  test('описание ровно по лимиту не обрезается', () => {
+    const prompt = buildAiPrompt({ ...vacancy, description: 'б'.repeat(MAX_DESCRIPTION_LENGTH) });
+    expect(prompt).toContain('б'.repeat(MAX_DESCRIPTION_LENGTH));
+    expect(prompt).not.toContain('…');
+  });
+
+  test('не режет эмодзи посередине', () => {
+    const prompt = buildAiPrompt({ ...vacancy, description: '😀'.repeat(MAX_DESCRIPTION_LENGTH + 10) });
+    expect(prompt).toContain(`${'😀'.repeat(MAX_DESCRIPTION_LENGTH - 1)}…`);
+  });
+
+  test('undefined, не-строки и пробелы вместо полей', () => {
+    expect(buildAiPrompt(undefined)).toContain('(no description)');
+    expect(buildAiPrompt({ title: 123, description: 456 })).toContain('Title: 123\n456');
+    expect(buildAiPrompt({ title: '   ', description: '' })).toContain('Title: \n(no description)');
+  });
+
+  test('вакансия идёт после профиля и правил', () => {
+    const prompt = buildAiPrompt(vacancy);
+    expect(prompt.indexOf('CANDIDATE:')).toBeLessThan(prompt.indexOf('HOW TO SCORE'));
+    expect(prompt.indexOf('HOW TO SCORE')).toBeLessThan(prompt.indexOf('VACANCY:'));
+  });
 });

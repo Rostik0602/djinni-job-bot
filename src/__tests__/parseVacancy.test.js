@@ -40,6 +40,15 @@ describe('parseVacancy', () => {
     expect(parseVacancy({}, { now: NOW })).toBeNull();
   });
 
+  test.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['строка', 'https://djinni.co/jobs/852334/'],
+    ['число', 852334],
+  ])('item не объект (%s) — null', (_, item) => {
+    expect(parseVacancy(item, { now: NOW })).toBeNull();
+  });
+
   test('берёт дату из pubDate, если isoDate нет', () => {
     const result = parseVacancy(makeItem({ isoDate: undefined }), { now: NOW });
     expect(result.published_at).toBe('2026-10-14T09:00:00.000Z');
@@ -76,5 +85,54 @@ describe('toPlainText', () => {
   test('null и undefined превращает в пустую строку', () => {
     expect(toPlainText(null)).toBe('');
     expect(toPlainText(undefined)).toBe('');
+  });
+
+  test('пустая и пробельная строка', () => {
+    expect(toPlainText('')).toBe('');
+    expect(toPlainText('  \n\t ')).toBe('');
+  });
+
+  test('число превращает в строку', () => {
+    expect(toPlainText(42)).toBe('42');
+  });
+});
+
+describe('parseVacancy: дополнительные случаи', () => {
+  test.each([
+    ['пробелы вместо ссылки', '   '],
+    ['/jobs/ без цифр', 'https://djinni.co/jobs/abc-123/'],
+    ['номер не после /jobs/', 'https://djinni.co/company/852334/'],
+  ])('битая ссылка: %s — null', (_, link) => {
+    expect(parseVacancy(makeItem({ link, guid: '' }), { now: NOW })).toBeNull();
+  });
+
+  test('берёт только номер из ссылки со слагом и параметрами', () => {
+    const link = 'https://djinni.co/jobs/618672-trainee-react-2026/?utm=1';
+    expect(parseVacancy(makeItem({ link }), { now: NOW }).id).toBe('618672');
+  });
+
+  test('пустая строка вместо даты — null', () => {
+    expect(parseVacancy(makeItem({ isoDate: '', pubDate: '' }), { now: NOW })).toBeNull();
+  });
+
+  test('нет ни isoDate, ни pubDate — null', () => {
+    expect(parseVacancy(makeItem({ isoDate: undefined, pubDate: undefined }), { now: NOW })).toBeNull();
+  });
+
+  test('ровно maxAgeHours проходит, на минуту больше — нет', () => {
+    const edge = makeItem({ isoDate: '2026-10-13T12:00:00.000Z' });
+    const over = makeItem({ isoDate: '2026-10-13T11:59:00.000Z' });
+    expect(parseVacancy(edge, { now: NOW })).not.toBeNull();
+    expect(parseVacancy(over, { now: NOW })).toBeNull();
+  });
+
+  test('пустое название — пустая строка', () => {
+    expect(parseVacancy(makeItem({ title: undefined }), { now: NOW }).title).toBe('');
+    expect(parseVacancy(makeItem({ title: '   ' }), { now: NOW }).title).toBe('');
+  });
+
+  test('вызов без опций использует значения по умолчанию', () => {
+    const item = makeItem({ isoDate: new Date().toISOString() });
+    expect(parseVacancy(item)).not.toBeNull();
   });
 });

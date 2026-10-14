@@ -1,6 +1,7 @@
 // Разбирает один item из ноды RSS Read в объект вакансии.
 // Возвращает null, если вакансию нужно пропустить.
 function parseVacancy(item, { now = new Date(), maxAgeHours = 24 } = {}) {
+  if (!item || typeof item !== 'object') return null;
   const url = String(item.link || item.guid || '').trim();
 
   // Номер вакансии из ссылки: /jobs/618672-trainee-... -> "618672"

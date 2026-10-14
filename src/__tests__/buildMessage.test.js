@@ -106,4 +106,72 @@ describe('formatPublishedAt', () => {
   test('раньше — дата и время', () => {
     expect(formatPublishedAt(new Date('2026-01-13T12:46:13Z'), NOW)).toBe('13.01, 14:46');
   });
+
+  test('граница суток по Киеву: 21:59 UTC 14-го — вчера, 22:00 UTC — сегодня', () => {
+    expect(formatPublishedAt(new Date('2026-01-14T21:59:00Z'), NOW)).toBe('вчора, 23:59');
+    expect(formatPublishedAt(new Date('2026-01-14T22:00:00Z'), NOW)).toBe('сьогодні, 00:00');
+  });
+
+  test('переход через границу месяца и года', () => {
+    const now = new Date('2026-01-01T10:00:00Z');
+    expect(formatPublishedAt(new Date('2025-12-31T10:00:00Z'), now)).toBe('вчора, 12:00');
+    expect(formatPublishedAt(new Date('2025-12-30T10:00:00Z'), now)).toBe('30.12, 12:00');
+  });
+
+  test('дата из будущего показывается датой, а не падает', () => {
+    expect(formatPublishedAt(new Date('2026-01-17T10:00:00Z'), NOW)).toBe('17.01, 12:00');
+  });
+});
+
+describe('buildMessage: дополнительные случаи', () => {
+  test('ai_score 0 и ai_summary {} — без строк ИИ', () => {
+    const text = buildMessage({ ...vacancy, ai_score: 0, ai_summary: {} }, { now: NOW });
+    expect(text).not.toContain('🎯');
+    expect(text).not.toContain('📝');
+  });
+
+  test.each([
+    ['строка "null"', 'null'],
+    ['массив', ['a']],
+    ['число', 5],
+    ['пустая строка', ''],
+  ])('ai_summary: %s не роняет функцию', (_, ai_summary) => {
+    const text = buildMessage({ ...vacancy, ai_score: 5, ai_summary }, { now: NOW });
+    expect(text).toContain('🎯 Підходить: 5/10');
+    expect(text).not.toContain('🧩');
+  });
+
+  test('экранирует stack, english, salary и url', () => {
+    const text = buildMessage({
+      ...vacancy,
+      url: 'https://djinni.co/jobs/1/?a=1&b=<2>',
+      ai_score: 5,
+      ai_summary: { stack: ['C<T>', 'R&D'], english: '<B1>', salary: '$1 & more' },
+    }, { now: NOW });
+    expect(text).toContain('🧩 C&lt;T&gt;, R&amp;D');
+    expect(text).toContain('🇬🇧 &lt;B1&gt;');
+    expect(text).toContain('💰 $1 &amp; more');
+    expect(text).toContain('🔗 https://djinni.co/jobs/1/?a=1&amp;b=&lt;2&gt;');
+  });
+
+  test('не режет эмодзи посередине при обрезке', () => {
+    const text = buildMessage({ ...vacancy, ai_score: 6, ai_summary: { summary: '😀'.repeat(400) } }, { now: NOW });
+    const summary = text.split('\n').find((l) => l.startsWith('📝')).replace('📝 ', '');
+    expect(Array.from(summary)).toHaveLength(300);
+  });
+
+  test('описание ровно 300 символов не обрезается', () => {
+    const text = buildMessage({ ...vacancy, ai_score: 6, ai_summary: { summary: 'б'.repeat(300) } }, { now: NOW });
+    expect(text).toContain('б'.repeat(300));
+    expect(text).not.toContain('…');
+  });
+
+  test('пустая вакансия не роняет функцию', () => {
+    expect(buildMessage({}, { now: NOW })).toContain('<b></b>');
+  });
+
+  test('без опций использует текущее время', () => {
+    const text = buildMessage({ ...vacancy, published_at: new Date().toISOString() });
+    expect(text).toContain('сьогодні');
+  });
 });

@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-14T21:48:31.270Z",
+  "updatedAt": "2026-10-14T21:59:43.000Z",
   "createdAt": "2026-10-14T15:06:26.281Z",
   "id": "sflSvZT3U6VWGhoq",
   "name": "djinni-to-telegram",
@@ -46,7 +46,7 @@
     },
     {
       "parameters": {
-        "jsCode": "   // @include-start parseVacancy.js\n// Разбирает один item из ноды RSS Read в объект вакансии.\n// Возвращает null, если вакансию нужно пропустить.\nfunction parseVacancy(item, { now = new Date(), maxAgeHours = 24 } = {}) {\n  const url = String(item.link || item.guid || '').trim();\n\n  // Номер вакансии из ссылки: /jobs/618672-trainee-... -> \"618672\"\n  const match = url.match(/\\/jobs\\/(\\d+)/);\n  if (!match) return null;\n\n  const publishedAt = new Date(item.isoDate || item.pubDate);\n  if (Number.isNaN(publishedAt.getTime())) return null;\n\n  // Слишком старые вакансии пропускаем\n  const ageHours = (now.getTime() - publishedAt.getTime()) / (60 * 60 * 1000);\n  if (ageHours > maxAgeHours) return null;\n\n  return {\n    id: match[1],\n    title: String(item.title || '').trim(),\n    url,\n    description: toPlainText(item.contentSnippet),\n    published_at: publishedAt.toISOString(),\n  };\n}\n\n// contentSnippet — уже текст без HTML, убираем только лишние пробелы и пустые строки\nfunction toPlainText(text) {\n  return String(text ?? '')\n    .replace(/\\u00a0/g, ' ')     // неразрывные пробелы (&nbsp;) -> обычные\n    .replace(/[ \\t]+\\n/g, '\\n')  // пробелы в конце строк\n    .replace(/\\n[ \\t]+/g, '\\n')  // пробелы в начале строк\n    .replace(/\\n{3,}/g, '\\n\\n')  // не больше одной пустой строки подряд\n    .trim();\n}\n// @include-end\n\n   // --- «клей»: подключаем функцию к данным n8n ---\n   const MAX_AGE_HOURS = 24;\n   const now = new Date();\n\n   return $input.all()\n     .map((item) => parseVacancy(item.json, { now, maxAgeHours: MAX_AGE_HOURS }))\n     .filter(Boolean)\n     .map((vacancy) => ({ json: vacancy }));"
+        "jsCode": "   // @include-start parseVacancy.js\n// Разбирает один item из ноды RSS Read в объект вакансии.\n// Возвращает null, если вакансию нужно пропустить.\nfunction parseVacancy(item, { now = new Date(), maxAgeHours = 24 } = {}) {\n  if (!item || typeof item !== 'object') return null;\n  const url = String(item.link || item.guid || '').trim();\n\n  // Номер вакансии из ссылки: /jobs/618672-trainee-... -> \"618672\"\n  const match = url.match(/\\/jobs\\/(\\d+)/);\n  if (!match) return null;\n\n  const publishedAt = new Date(item.isoDate || item.pubDate);\n  if (Number.isNaN(publishedAt.getTime())) return null;\n\n  // Слишком старые вакансии пропускаем\n  const ageHours = (now.getTime() - publishedAt.getTime()) / (60 * 60 * 1000);\n  if (ageHours > maxAgeHours) return null;\n\n  return {\n    id: match[1],\n    title: String(item.title || '').trim(),\n    url,\n    description: toPlainText(item.contentSnippet),\n    published_at: publishedAt.toISOString(),\n  };\n}\n\n// contentSnippet — уже текст без HTML, убираем только лишние пробелы и пустые строки\nfunction toPlainText(text) {\n  return String(text ?? '')\n    .replace(/\\u00a0/g, ' ')     // неразрывные пробелы (&nbsp;) -> обычные\n    .replace(/[ \\t]+\\n/g, '\\n')  // пробелы в конце строк\n    .replace(/\\n[ \\t]+/g, '\\n')  // пробелы в начале строк\n    .replace(/\\n{3,}/g, '\\n\\n')  // не больше одной пустой строки подряд\n    .trim();\n}\n// @include-end\n\n   // --- «клей»: подключаем функцию к данным n8n ---\n   const MAX_AGE_HOURS = 24;\n   const now = new Date();\n\n   return $input.all()\n     .map((item) => parseVacancy(item.json, { now, maxAgeHours: MAX_AGE_HOURS }))\n     .filter(Boolean)\n     .map((vacancy) => ({ json: vacancy }));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -580,9 +580,9 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "90baae62-ae94-4d73-b87f-260b2ed8b499",
-  "activeVersionId": "90baae62-ae94-4d73-b87f-260b2ed8b499",
-  "versionCounter": 109,
+  "versionId": "f1ac1f95-7e75-4357-899e-8e8f792a121f",
+  "activeVersionId": "f1ac1f95-7e75-4357-899e-8e8f792a121f",
+  "versionCounter": 110,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],

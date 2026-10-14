@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-14T21:26:47.258Z",
+  "updatedAt": "2026-10-14T21:59:48.000Z",
   "createdAt": "2026-10-14T20:02:55.271Z",
   "id": "U2jpsSNiAEOqhwL0",
   "name": "telegram-buttons",
@@ -230,8 +230,8 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "135fb7a2-db2d-42c3-abe8-52a4e3340d0e",
-  "activeVersionId": "135fb7a2-db2d-42c3-abe8-52a4e3340d0e",
+  "versionId": "fd7fbd01-7f75-4f39-ae84-3194487daed5",
+  "activeVersionId": "fd7fbd01-7f75-4f39-ae84-3194487daed5",
   "versionCounter": 44,
   "triggerCount": 1,
   "sourceWorkflowId": null,

@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-14T21:49:26.150Z",
+  "updatedAt": "2026-10-14T21:59:39.000Z",
   "createdAt": "2026-10-14T17:42:29.267Z",
   "id": "PSWRsF1thakswBDY",
   "name": "error-handler",
@@ -68,8 +68,8 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "e25714b1-38a4-49a8-993c-897bed4a98cb",
-  "activeVersionId": "e25714b1-38a4-49a8-993c-897bed4a98cb",
+  "versionId": "b7f8efe2-c218-4af5-b3d7-4d0871237086",
+  "activeVersionId": "b7f8efe2-c218-4af5-b3d7-4d0871237086",
   "versionCounter": 12,
   "triggerCount": 0,
   "sourceWorkflowId": null,

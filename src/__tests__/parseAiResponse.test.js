@@ -105,3 +105,69 @@ describe('parseAiResponse: остальные поля', () => {
     expect(summary.endsWith('…')).toBe(true);
   });
 });
+
+describe('parseAiResponse: дополнительные случаи', () => {
+  test('блок ``` без json и с текстом вокруг', () => {
+    expect(parseAiResponse(`Ось:\n\`\`\`\n${REAL_RESPONSE}\n\`\`\`\nГотово`)).toEqual(EXPECTED);
+  });
+
+  test('блок ```JSON в верхнем регистре', () => {
+    expect(parseAiResponse(`\`\`\`JSON\n${REAL_RESPONSE}\n\`\`\``)).toEqual(EXPECTED);
+  });
+
+  test.each([
+    ['пустой объект', '{}'],
+    ['одни пробелы', '   \n '],
+    ['скобки в обратном порядке', '} {'],
+    ['число', '42'],
+    ['незакрытый блок с битым JSON', '```json\n{"score": 8,'],
+  ])('%s — null', (_, text) => {
+    expect(parseAiResponse(text)).toBeNull();
+  });
+
+  test('score "8/10" читается как 8', () => {
+    expect(parseAiResponse(json({ score: '8/10' })).score).toBe(8);
+  });
+
+  test('score: массив, объект, слово — null', () => {
+    expect(parseAiResponse(json({ score: [] }))).toBeNull();
+    expect(parseAiResponse(json({ score: {} }))).toBeNull();
+    expect(parseAiResponse(json({ score: 'high' }))).toBeNull();
+  });
+
+  test('score 0.4 и 10.4 прижимаются к границам', () => {
+    expect(parseAiResponse(json({ score: 0.4 })).score).toBe(1);
+    expect(parseAiResponse(json({ score: 10.4 })).score).toBe(10);
+  });
+
+  test('поля неверных типов дают null / []', () => {
+    const r = parseAiResponse(json({ stack: 5, english: ['B1'], salary: { a: 1 }, summary: true }));
+    expect(r).toEqual({ score: 8, stack: ['5'], english: null, salary: null, summary: null });
+  });
+
+  test('stack: null, пустая строка и запятые — пустой массив', () => {
+    expect(parseAiResponse(json({ stack: null })).stack).toEqual([]);
+    expect(parseAiResponse(json({ stack: '' })).stack).toEqual([]);
+    expect(parseAiResponse(json({ stack: ' , ' })).stack).toEqual([]);
+  });
+
+  test('stack: элементы "N/A" и "none" отбрасываются', () => {
+    expect(parseAiResponse(json({ stack: ['React', 'N/A', 'none'] })).stack).toEqual(['React']);
+  });
+
+  test('english длиннее 100 символов обрезается', () => {
+    const { english } = parseAiResponse(json({ english: 'x'.repeat(200) }));
+    expect(Array.from(english)).toHaveLength(100);
+    expect(english.endsWith('…')).toBe(true);
+  });
+
+  test('"UNKNOWN" и "Not Stated" в любом регистре — null', () => {
+    const r = parseAiResponse(json({ english: 'UNKNOWN', salary: 'Not Stated' }));
+    expect(r.english).toBeNull();
+    expect(r.salary).toBeNull();
+  });
+
+  test('summary из пробелов — null', () => {
+    expect(parseAiResponse(json({ summary: '   ' })).summary).toBeNull();
+  });
+});
