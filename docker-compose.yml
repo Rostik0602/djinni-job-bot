@@ -11,7 +11,9 @@ services:
     image: docker.n8n.io/n8nio/n8n:2.43.5
     restart: unless-stopped
     ports:
-      - "5678:5678"                      # порт_на_твоём_ПК:порт_в_контейнере
+      # Только 127.0.0.1: редактор n8n не виден из сети. На сервере открываем его
+      # через SSH-туннель, на ПК — как раньше, по http://localhost:5678
+      - "127.0.0.1:5678:5678"
     environment:
       - GENERIC_TIMEZONE=Europe/Kyiv     # часовой пояс для Schedule-нод n8n
       - TZ=Europe/Kyiv                   # часовой пояс системы внутри контейнера
