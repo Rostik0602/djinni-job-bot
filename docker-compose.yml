@@ -22,6 +22,8 @@ services:
       # Токен бота для HTTP-запросов к Telegram API (getUpdates и др.).
       # Нода HTTP Request не умеет брать его из credential Telegram, поэтому он в .env.
       - "TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:?set TELEGRAM_BOT_TOKEN in .env}"
+      # Твой chat_id: куда бот шлёт вакансии и алерты. Не секрет, но и в публичный репозиторий незачем
+      - "TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:?set TELEGRAM_CHAT_ID in .env}"
       # В n8n 2.x выражения по умолчанию не видят переменные окружения.
       # Открываем доступ, чтобы в URL можно было писать {{ $env.TELEGRAM_BOT_TOKEN }}
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false

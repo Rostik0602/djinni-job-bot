@@ -4,3 +4,5 @@
 # Зависимости и отчёты тестов (появятся на этапе синхронизации кода)
 node_modules/
 coverage/
+# Личные настройки Claude Code — не для git
+.claude/settings.local.json

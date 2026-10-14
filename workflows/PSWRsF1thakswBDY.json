@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-14T21:19:36.000Z",
+  "updatedAt": "2026-10-14T21:49:26.150Z",
   "createdAt": "2026-10-14T17:42:29.267Z",
   "id": "PSWRsF1thakswBDY",
   "name": "error-handler",
@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "chatId": "5456346129",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
         "text": "=   🚨 Упал workflow «{{ $json.workflow.name }}»\n   Нода: {{ $json.execution.lastNodeExecuted }}\n   Ошибка: {{ $json.execution.error.message }}\n   {{ $json.execution.url }}",
         "additionalFields": {
           "appendAttribution": false
@@ -35,6 +35,8 @@
       "id": "cd0d68f4-544c-4939-9c2d-f457ba432c4c",
       "name": "Send a text message",
       "webhookId": "d28328b2-5148-40d2-8d37-3bdf9221bc8f",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
       "credentials": {
         "telegramApi": {
           "id": "EvK0rHKEMQd9CnZ1",
@@ -66,14 +68,14 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "386a003e-6ea7-499a-b2e8-ae2a8dfceffe",
-  "activeVersionId": "386a003e-6ea7-499a-b2e8-ae2a8dfceffe",
-  "versionCounter": 6,
+  "versionId": "e25714b1-38a4-49a8-993c-897bed4a98cb",
+  "activeVersionId": "e25714b1-38a4-49a8-993c-897bed4a98cb",
+  "versionCounter": 12,
   "triggerCount": 0,
   "sourceWorkflowId": null,
   "tags": [],
   "versionMetadata": {
-    "name": "Version 66afdc16",
+    "name": "Version e25714b1",
     "description": ""
   }
 }

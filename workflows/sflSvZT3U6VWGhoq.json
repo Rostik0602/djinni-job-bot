@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-14T21:27:17.558Z",
+  "updatedAt": "2026-10-14T21:48:31.270Z",
   "createdAt": "2026-10-14T15:06:26.281Z",
   "id": "sflSvZT3U6VWGhoq",
   "name": "djinni-to-telegram",
@@ -116,7 +116,7 @@
     },
     {
       "parameters": {
-        "chatId": "5456346129",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
         "text": "={{ $json.text }}",
         "replyMarkup": "inlineKeyboard",
         "inlineKeyboard": {
@@ -580,14 +580,14 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "e7ab5071-192b-4d71-9235-77392b578fde",
-  "activeVersionId": "e7ab5071-192b-4d71-9235-77392b578fde",
-  "versionCounter": 107,
+  "versionId": "90baae62-ae94-4d73-b87f-260b2ed8b499",
+  "activeVersionId": "90baae62-ae94-4d73-b87f-260b2ed8b499",
+  "versionCounter": 109,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],
   "versionMetadata": {
-    "name": "Version e7ab5071",
+    "name": "Version 90baae62",
     "description": ""
   }
 }
