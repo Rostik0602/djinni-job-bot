@@ -1,0 +1,128 @@
+{
+  "updatedAt": "2026-10-14T20:13:12.159Z",
+  "createdAt": "2026-10-14T20:02:55.271Z",
+  "id": "U2jpsSNiAEOqhwL0",
+  "name": "telegram-buttons",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ca1883de-0318-4be1-82b7-42e91126f596",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "   // Номер последнего обработанного обновления хранится в static data workflow.\n   // Просим у Telegram только то, что новее него\n   const staticData = $getWorkflowStaticData('global');\n   return [{ json: { offset: (staticData.lastUpdateId ?? 0) + 1 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "692b2de8-288f-4903-aa82-45f3b6086bfd",
+      "name": "getOffset"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/getUpdates",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=     {\n       \"offset\": {{ $json.offset }},\n       \"timeout\": 50,\n       \"allowed_updates\": [\"callback_query\"]\n     }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "15683d5d-3cec-4f88-acb9-9b92d9ac1262",
+      "name": "getUpdates"
+    },
+    {
+      "parameters": {
+        "jsCode": "   // @include-start parseCallback.js\n// Разбирает одно обновление из getUpdates — нажатие inline-кнопки под вакансией.\n// Кнопки присылают callback_data вида \"applied:852334\" или \"skipped:852334\".\n// Возвращает всё, что нужно следующим нодам, или null, если это не наше нажатие.\nconst CALLBACK_DATA = /^(applied|skipped):(\\d+)$/;\n\n// Текст всплывающего уведомления после нажатия (answerCallbackQuery, до 200 символов)\nconst ANSWER_TEXT = {\n  applied: '✅ Збережено: відгукнувся',\n  skipped: '❌ Вакансію пропущено',\n};\n\nfunction parseCallback(update) {\n  const query = update?.callback_query;\n  if (!query) return null;\n\n  const match = CALLBACK_DATA.exec(String(query.data ?? ''));\n  if (!match) return null;\n\n  const [, action, vacancyId] = match;\n  return {\n    updateId: update.update_id,\n    callbackQueryId: query.id,\n    action,\n    vacancyId,\n    answerText: ANSWER_TEXT[action],\n    // Сообщение с кнопками: из него потом уберём клавиатуру\n    chatId: query.message?.chat?.id ?? null,\n    messageId: query.message?.message_id ?? null,\n  };\n}\n// @include-end\n\n   // --- «клей»: подключаем функцию к данным n8n ---\n   const updates = $input.first().json.result ?? [];\n\n   // Запоминаем номер последнего обновления. Следующий getUpdates попросит\n   // только более новые, а Telegram удалит у себя всё, что старше\n   if (updates.length > 0) {\n     const staticData = $getWorkflowStaticData('global');\n     staticData.lastUpdateId = Math.max(...updates.map((update) => update.update_id));\n   }\n\n   return updates\n     .map(parseCallback)\n     .filter(Boolean)\n     .map((callback) => ({ json: callback }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ],
+      "id": "01c1063d-6fa6-4453-b4d5-03d252df01b8",
+      "name": "parseCallback"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "getOffset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getOffset": {
+      "main": [
+        [
+          {
+            "node": "getUpdates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getUpdates": {
+      "main": [
+        [
+          {
+            "node": "parseCallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "31e30bdb-c6c2-4bf5-b8de-dc323da91d22",
+  "activeVersionId": null,
+  "versionCounter": 16,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

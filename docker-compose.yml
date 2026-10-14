@@ -6,9 +6,8 @@
 
 services:
   n8n:
-    # stable — канал последнего стабильного релиза (раньше он назывался latest).
-    # После первого запуска замени stable на точный номер версии
-    # (узнать его: docker compose exec -T n8n n8n --version).
+    # Версия закреплена: n8n обновляешь осознанно, меняя номер здесь.
+    # Узнать текущую версию: docker compose exec -T n8n n8n --version
     image: docker.n8n.io/n8nio/n8n:2.43.5
     restart: unless-stopped
     ports:
@@ -20,6 +19,12 @@ services:
       # если переменной нет в .env, docker compose сразу остановится с этой ошибкой,
       # а не запустит n8n со случайно сгенерированным ключом.
       - "N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}"
+      # Токен бота для HTTP-запросов к Telegram API (getUpdates и др.).
+      # Нода HTTP Request не умеет брать его из credential Telegram, поэтому он в .env.
+      - "TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:?set TELEGRAM_BOT_TOKEN in .env}"
+      # В n8n 2.x выражения по умолчанию не видят переменные окружения.
+      # Открываем доступ, чтобы в URL можно было писать {{ $env.TELEGRAM_BOT_TOKEN }}
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
     volumes:
       - n8n_data:/home/node/.n8n         # данные самого n8n: workflow, credentials, история запусков
       - ./workflows:/workflows           # папка проекта <-> контейнер, для импорта/выгрузки через CLI

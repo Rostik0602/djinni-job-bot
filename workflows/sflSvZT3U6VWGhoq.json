@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-14T19:41:45.277Z",
+  "updatedAt": "2026-10-14T20:14:06.000Z",
   "createdAt": "2026-10-14T15:06:26.281Z",
   "id": "sflSvZT3U6VWGhoq",
   "name": "djinni-to-telegram",
@@ -382,8 +382,8 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "1b490501-39a8-4ec2-8ba2-13296854fbf6",
-  "activeVersionId": "1b490501-39a8-4ec2-8ba2-13296854fbf6",
+  "versionId": "874f9d9a-dbca-44b8-841b-c1706d9e6ab5",
+  "activeVersionId": "874f9d9a-dbca-44b8-841b-c1706d9e6ab5",
   "versionCounter": 77,
   "triggerCount": 1,
   "sourceWorkflowId": null,
