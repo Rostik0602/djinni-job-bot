@@ -26,7 +26,7 @@ function parseVacancy(item, { now = new Date(), maxAgeHours = 24 } = {}) {
 // contentSnippet — уже текст без HTML, убираем только лишние пробелы и пустые строки
 function toPlainText(text) {
   return String(text ?? '')
-    .replace(/ /g, ' ')     // неразрывные пробелы (&nbsp;) -> обычные
+    .replace(/\u00a0/g, ' ')     // неразрывные пробелы (&nbsp;) -> обычные
     .replace(/[ \t]+\n/g, '\n')  // пробелы в конце строк
     .replace(/\n[ \t]+/g, '\n')  // пробелы в начале строк
     .replace(/\n{3,}/g, '\n\n')  // не больше одной пустой строки подряд

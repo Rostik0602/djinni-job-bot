@@ -69,7 +69,7 @@ describe('parseVacancy', () => {
 
 describe('toPlainText', () => {
   test('убирает неразрывные пробелы, пробелы по краям строк и лишние пустые строки', () => {
-    const input = 'Про нас\n \n \n \nВимоги:  \n  React';
+    const input = 'Про нас\n\u00a0\n\u00a0\n\u00a0\nВимоги:  \n  React';
     expect(toPlainText(input)).toBe('Про нас\n\nВимоги:\nReact');
   });
 
