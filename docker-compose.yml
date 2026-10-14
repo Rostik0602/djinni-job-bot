@@ -9,7 +9,7 @@ services:
     # stable — канал последнего стабильного релиза (раньше он назывался latest).
     # После первого запуска замени stable на точный номер версии
     # (узнать его: docker compose exec -T n8n n8n --version).
-    image: docker.n8n.io/n8nio/n8n:stable
+    image: docker.n8n.io/n8nio/n8n:2.43.5
     restart: unless-stopped
     ports:
       - "5678:5678"                      # порт_на_твоём_ПК:порт_в_контейнере
