@@ -1,0 +1,347 @@
+{
+  "updatedAt": "2026-10-14T18:10:45.874Z",
+  "createdAt": "2026-10-14T15:06:26.281Z",
+  "id": "sflSvZT3U6VWGhoq",
+  "name": "djinni-to-telegram",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 20
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "74bf2bf3-7f76-47f7-a4dc-f7591c6e4be2",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://djinni.co/jobs/rss/?primary_keyword=JavaScript&primary_keyword=Markup&primary_keyword=React.js&primary_keyword=Fullstack&primary_keyword=Node.js&exp_level=no_exp&exp_level=1y&exp_level=2y&employment=remote&english_level=no_english&english_level=basic&english_level=pre&english_level=intermediate",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "e25cd6a1-3c39-49e7-a4ea-cf25828d7fc6",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "jsCode": "   // @include-start parseVacancy.js\n// Разбирает один item из ноды RSS Read в объект вакансии.\n// Возвращает null, если вакансию нужно пропустить.\nfunction parseVacancy(item, { now = new Date(), maxAgeHours = 24 } = {}) {\n  const url = String(item.link || item.guid || '').trim();\n\n  // Номер вакансии из ссылки: /jobs/618672-trainee-... -> \"618672\"\n  const match = url.match(/\\/jobs\\/(\\d+)/);\n  if (!match) return null;\n\n  const publishedAt = new Date(item.isoDate || item.pubDate);\n  if (Number.isNaN(publishedAt.getTime())) return null;\n\n  // Слишком старые вакансии пропускаем\n  const ageHours = (now.getTime() - publishedAt.getTime()) / (60 * 60 * 1000);\n  if (ageHours > maxAgeHours) return null;\n\n  return {\n    id: match[1],\n    title: String(item.title || '').trim(),\n    url,\n    description: toPlainText(item.contentSnippet),\n    published_at: publishedAt.toISOString(),\n  };\n}\n\n// contentSnippet — уже текст без HTML, убираем только лишние пробелы и пустые строки\nfunction toPlainText(text) {\n  return String(text ?? '')\n    .replace(/ /g, ' ')     // неразрывные пробелы (&nbsp;) -> обычные\n    .replace(/[ \\t]+\\n/g, '\\n')  // пробелы в конце строк\n    .replace(/\\n[ \\t]+/g, '\\n')  // пробелы в начале строк\n    .replace(/\\n{3,}/g, '\\n\\n')  // не больше одной пустой строки подряд\n    .trim();\n}\n// @include-end\n\n   // --- «клей»: подключаем функцию к данным n8n ---\n   const MAX_AGE_HOURS = 24;\n   const now = new Date();\n\n   return $input.all()\n     .map((item) => parseVacancy(item.json, { now, maxAgeHours: MAX_AGE_HOURS }))\n     .filter(Boolean)\n     .map((vacancy) => ({ json: vacancy }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "4b2c3360-f434-4528-988a-78b45e2faa59",
+      "name": "parseVacancy"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "   INSERT INTO vacancies (id, title, url, description, published_at)\n   VALUES ($1, $2, $3, $4, $5)\n   ON CONFLICT (id) DO NOTHING\n   RETURNING id;",
+        "options": {
+          "queryReplacement": "=   {{ [ $json.id, $json.title, $json.url, $json.description, $json.published_at ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        672,
+        0
+      ],
+      "id": "5453b344-459e-49bb-85b2-4cc9adab51fe",
+      "name": "saveVacancies",
+      "credentials": {
+        "postgres": {
+          "id": "AOPUdAvB3WfS8Huw",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "   SELECT *\n   FROM vacancies\n   WHERE status = 'new' AND send_attempts < 3\n   ORDER BY published_at\n   LIMIT 15;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        112,
+        192
+      ],
+      "id": "26756551-f993-4178-8183-76d1d562ba68",
+      "name": "getQueue",
+      "credentials": {
+        "postgres": {
+          "id": "AOPUdAvB3WfS8Huw",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        336,
+        192
+      ],
+      "id": "84cac978-2ee6-45d5-8fc4-e36c0748c83e",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "chatId": "5456346129",
+        "text": "=   🆕 {{ $json.title }}\n   🕒 {{ DateTime.fromISO($json.published_at).setZone('Europe/Kyiv').toFormat('dd.MM, HH:mm') }}\n   🔗 {{ $json.url }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1008,
+        96
+      ],
+      "id": "a60cbaef-33f2-4826-aea7-36f6e5bb2364",
+      "name": "sendTelegram",
+      "webhookId": "4a806a3b-00fe-4192-8062-cc094ae734ec",
+      "credentials": {
+        "telegramApi": {
+          "id": "EvK0rHKEMQd9CnZ1",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "     UPDATE vacancies\n     SET status = 'sent', telegram_message_id = $2\n     WHERE id = $1;",
+        "options": {
+          "queryReplacement": "=     {{ [ $('Loop Over Items').item.json.id, $json.result.message_id ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1360,
+        96
+      ],
+      "id": "13449b26-f4ae-46b4-9451-bdc8bd9240c4",
+      "name": "markSent",
+      "credentials": {
+        "postgres": {
+          "id": "AOPUdAvB3WfS8Huw",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 4
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1616,
+        96
+      ],
+      "id": "1fe3a8ef-caff-4310-a7cd-dce126e8556f",
+      "name": "Wait",
+      "webhookId": "78e027ac-35dd-4c7a-91e5-0ba915de3545"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "     UPDATE vacancies\n     SET send_attempts = send_attempts + 1,\n         status = CASE WHEN send_attempts + 1 >= 3 THEN 'failed' ELSE status END\n     WHERE id = $1;",
+        "options": {
+          "queryReplacement": "=     {{ [ $('Loop Over Items').item.json.id ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1616,
+        256
+      ],
+      "id": "ebe85620-dc48-4320-82d1-3c8638170966",
+      "name": "markFailed",
+      "credentials": {
+        "postgres": {
+          "id": "AOPUdAvB3WfS8Huw",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "getQueue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "parseVacancy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parseVacancy": {
+      "main": [
+        [
+          {
+            "node": "saveVacancies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getQueue": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "sendTelegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sendTelegram": {
+      "main": [
+        [
+          {
+            "node": "markSent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "markFailed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "markSent": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "markFailed": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "PSWRsF1thakswBDY",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": {
+    "node:Schedule Trigger": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "ee53da63-7f4c-44ec-b6e9-99334a2154db",
+  "activeVersionId": "24762f25-81c4-4b22-8d3b-624dc41c6bd0",
+  "versionCounter": 54,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

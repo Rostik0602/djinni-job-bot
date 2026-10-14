@@ -3,7 +3,9 @@
   "private": true,
   "scripts": {
     "test": "jest",
-    "wf:export": "docker compose exec -T n8n n8n export:workflow --all --separate --pretty --output=/workflows"
+    "sync": "node scripts/sync-code.js",
+    "wf:export": "node scripts/wf-export.js",
+    "wf:import": "node scripts/wf-import.js"
   },
   "devDependencies": {
     "jest": "^30.5.2"
