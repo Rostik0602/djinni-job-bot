@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-14T20:38:55.215Z",
+  "updatedAt": "2026-10-14T21:26:47.258Z",
   "createdAt": "2026-10-14T20:02:55.271Z",
   "id": "U2jpsSNiAEOqhwL0",
   "name": "telegram-buttons",
@@ -56,7 +56,10 @@
         0
       ],
       "id": "15683d5d-3cec-4f88-acb9-9b92d9ac1262",
-      "name": "getUpdates"
+      "name": "getUpdates",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
     },
     {
       "parameters": {
@@ -227,14 +230,14 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "824a3dce-2730-4a59-9723-3a00aaf72971",
-  "activeVersionId": "824a3dce-2730-4a59-9723-3a00aaf72971",
-  "versionCounter": 41,
+  "versionId": "135fb7a2-db2d-42c3-abe8-52a4e3340d0e",
+  "activeVersionId": "135fb7a2-db2d-42c3-abe8-52a4e3340d0e",
+  "versionCounter": 44,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],
   "versionMetadata": {
-    "name": "Version 824a3dce",
+    "name": "Version 135fb7a2",
     "description": ""
   }
 }

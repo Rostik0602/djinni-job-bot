@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-14T21:18:33.509Z",
+  "updatedAt": "2026-10-14T21:27:17.558Z",
   "createdAt": "2026-10-14T15:06:26.281Z",
   "id": "sflSvZT3U6VWGhoq",
   "name": "djinni-to-telegram",
@@ -39,7 +39,10 @@
         0
       ],
       "id": "e25cd6a1-3c39-49e7-a4ea-cf25828d7fc6",
-      "name": "RSS Read"
+      "name": "RSS Read",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -278,7 +281,10 @@
         304
       ],
       "id": "8c440b1a-c180-40e0-b2e2-32b767bdc53a",
-      "name": "buildAiPrompt"
+      "name": "buildAiPrompt",
+      "retryOnFail": false,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
     },
     {
       "parameters": {
@@ -574,14 +580,14 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "519dd33f-4380-471f-9359-c229a30807ea",
-  "activeVersionId": "874f9d9a-dbca-44b8-841b-c1706d9e6ab5",
-  "versionCounter": 101,
+  "versionId": "e7ab5071-192b-4d71-9235-77392b578fde",
+  "activeVersionId": "e7ab5071-192b-4d71-9235-77392b578fde",
+  "versionCounter": 107,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],
   "versionMetadata": {
-    "name": null,
-    "description": null
+    "name": "Version e7ab5071",
+    "description": ""
   }
 }
