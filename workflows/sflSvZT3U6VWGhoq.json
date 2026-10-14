@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-14T18:10:45.874Z",
+  "updatedAt": "2026-10-14T18:35:06.259Z",
   "createdAt": "2026-10-14T15:06:26.281Z",
   "id": "sflSvZT3U6VWGhoq",
   "name": "djinni-to-telegram",
@@ -114,9 +114,10 @@
     {
       "parameters": {
         "chatId": "5456346129",
-        "text": "=   🆕 {{ $json.title }}\n   🕒 {{ DateTime.fromISO($json.published_at).setZone('Europe/Kyiv').toFormat('dd.MM, HH:mm') }}\n   🔗 {{ $json.url }}",
+        "text": "={{ $json.text }}",
         "additionalFields": {
-          "appendAttribution": false
+          "appendAttribution": false,
+          "parse_mode": "HTML"
         }
       },
       "type": "n8n-nodes-base.telegram",
@@ -195,6 +196,19 @@
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @include-start buildMessage.js\n// Собирает текст сообщения о вакансии для Telegram.\n// Нода Telegram отправляет его с Parse Mode = HTML: заголовок выделяем жирным,\n// а весь текст со стороны (Djinni, позже Gemini) экранируем, чтобы символы\n// < > & не ломали разметку и Telegram не отклонил сообщение.\nconst TIME_ZONE = 'Europe/Kyiv';\nconst MAX_SUMMARY_LENGTH = 300;\n\nfunction buildMessage(vacancy, { now = new Date() } = {}) {\n  const lines = [`🆕 <b>${escapeHtml(vacancy.title)}</b>`];\n\n  // Строки от ИИ появятся на этапе 5; пока полей нет, нет и строк\n  if (vacancy.ai_score) lines.push(`🎯 Підходить: ${vacancy.ai_score}/10`);\n  const ai = readAiSummary(vacancy.ai_summary);\n  const stack = Array.isArray(ai.stack) ? ai.stack.join(', ') : ai.stack;\n  if (stack) lines.push(`🧩 ${escapeHtml(stack)}`);\n  if (ai.english) lines.push(`🇬🇧 ${escapeHtml(ai.english)}`);\n  if (ai.salary) lines.push(`💰 ${escapeHtml(ai.salary)}`);\n  // Сначала обрезаем, потом экранируем: иначе можно разрезать &amp; посередине\n  if (ai.summary) lines.push(`📝 ${escapeHtml(truncate(ai.summary, MAX_SUMMARY_LENGTH))}`);\n\n  const publishedAt = new Date(vacancy.published_at);\n  if (vacancy.published_at && !Number.isNaN(publishedAt.getTime())) {\n    lines.push(`🕒 ${formatPublishedAt(publishedAt, now)}`);\n  }\n  lines.push(`🔗 ${escapeHtml(vacancy.url)}`);\n\n  return lines.join('\\n');\n}\n\n// В режиме HTML Telegram требует заменить три символа.\n// & меняем первым, иначе готовые &lt; превратятся в &amp;lt;\nfunction escapeHtml(value) {\n  return String(value ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;');\n}\n\n// ai_summary — колонка JSONB: из Postgres приходит объектом, строку JSON тоже понимаем.\n// Битые данные не роняют отправку: просто не будет строк от ИИ\nfunction readAiSummary(value) {\n  let data = value;\n  if (typeof data === 'string') {\n    try {\n      data = JSON.parse(data);\n    } catch {\n      return {};\n    }\n  }\n  return data && typeof data === 'object' ? data : {};\n}\n\n// Array.from режет по символам, а не по половинкам эмодзи (в JS они из двух частей)\nfunction truncate(text, maxLength) {\n  const chars = Array.from(String(text).trim());\n  if (chars.length <= maxLength) return chars.join('');\n  return `${chars.slice(0, maxLength - 1).join('').trimEnd()}…`;\n}\n\n// «сьогодні, 14:01» / «вчора, 23:30» / «13.01, 14:46» — по времени Киева\nfunction formatPublishedAt(date, now) {\n  const published = kyivParts(date);\n  const today = kyivParts(now);\n  const time = `${published.hour}:${published.minute}`;\n  const daysAgo = dayNumber(today) - dayNumber(published);\n\n  if (daysAgo === 0) return `сьогодні, ${time}`;\n  if (daysAgo === 1) return `вчора, ${time}`;\n  return `${published.day}.${published.month}, ${time}`;\n}\n\n// Части даты по часовому поясу Киева: { year, month, day, hour, minute }.\n// Летнее и зимнее время Intl учитывает сам\nfunction kyivParts(date) {\n  const formatter = new Intl.DateTimeFormat('en-GB', {\n    timeZone: TIME_ZONE,\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit',\n    hour: '2-digit',\n    minute: '2-digit',\n    hourCycle: 'h23',\n  });\n  return Object.fromEntries(formatter.formatToParts(date).map(({ type, value }) => [type, value]));\n}\n\n// Номер календарного дня: разница номеров = сколько дней прошло\nfunction dayNumber({ year, month, day }) {\n  return Date.UTC(Number(year), Number(month) - 1, Number(day)) / (24 * 60 * 60 * 1000);\n}\n// @include-end\n\n// --- «клей»: подключаем функцию к данным n8n ---\nreturn $input.all().map((item, index) => ({\n  json: { ...item.json, text: buildMessage(item.json) },\n  pairedItem: index,\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        192
+      ],
+      "id": "23152648-88c9-44c5-9f63-62a8824e8bbe",
+      "name": "buildMessage"
     }
   ],
   "connections": {
@@ -252,7 +266,7 @@
         [],
         [
           {
-            "node": "sendTelegram",
+            "node": "buildMessage",
             "type": "main",
             "index": 0
           }
@@ -309,6 +323,17 @@
           }
         ]
       ]
+    },
+    "buildMessage": {
+      "main": [
+        [
+          {
+            "node": "sendTelegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -334,9 +359,9 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "ee53da63-7f4c-44ec-b6e9-99334a2154db",
-  "activeVersionId": "24762f25-81c4-4b22-8d3b-624dc41c6bd0",
-  "versionCounter": 54,
+  "versionId": "b44a36fd-8d41-41a6-80ac-63f986a45af6",
+  "activeVersionId": "43f81664-3759-4247-8fc8-1b7f71ff78a7",
+  "versionCounter": 59,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],
