@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-14T20:14:06.000Z",
+  "updatedAt": "2026-10-14T21:18:33.509Z",
   "createdAt": "2026-10-14T15:06:26.281Z",
   "id": "sflSvZT3U6VWGhoq",
   "name": "djinni-to-telegram",
@@ -146,8 +146,8 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1008,
-        96
+        1040,
+        64
       ],
       "id": "a60cbaef-33f2-4826-aea7-36f6e5bb2364",
       "name": "sendTelegram",
@@ -227,11 +227,130 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        560,
-        192
+        800,
+        176
       ],
       "id": "23152648-88c9-44c5-9f63-62a8824e8bbe",
       "name": "buildMessage"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2f9f5e99-aca9-40b7-a488-48afe080fbb8",
+              "leftValue": "={{ !$json.ai_summary }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        560,
+        192
+      ],
+      "id": "5a0aad4b-053b-43d9-aa6a-f74b1cc5f161",
+      "name": "needsAi"
+    },
+    {
+      "parameters": {
+        "jsCode": "// @include-start buildAiPrompt.js\n// Собирает промпт для Gemini: профиль кандидата, правила оценки и текст вакансии.\n// Личных данных (имя, контакты, город, ссылки) здесь нет и быть не должно:\n// на бесплатном тарифе Google может использовать запросы для обучения, а файл лежит в git.\nconst MAX_DESCRIPTION_LENGTH = 3000; // длинные описания режем, чтобы не тратить токены\n\nconst PROFILE = `Junior Frontend Developer (React + TypeScript). No commercial experience yet.\nAbout 1.5 years of frontend practice, 1 year of it with React and TypeScript.\nBuilt and deployed two fullstack portfolio apps (a personal finance app and an online store).\nMain skills: React 18, TypeScript, Redux Toolkit, RTK Query, React Router, Formik + Yup,\nSCSS (Modules, BEM), responsive layout from 320px, Figma, Vite, i18next.\nAlso: Node.js, Express, NestJS, PostgreSQL, Prisma, JWT auth, Docker, Jest.\nLearning now: n8n, workflow automation, AI APIs.\nEnglish: B1 (Intermediate).\nWants: remote work, salary from $500 per month.`;\n\nconst SCORING = `9-10: junior or trainee role with React + TypeScript (Next.js is fine too),\nor JavaScript fullstack with React + Node.js/NestJS; remote; English B1 or lower;\nsalary from $500 or not stated.\n7-8: good fit with small gaps: Vue or another modern frontend stack; English B2;\nup to 1 year of commercial experience required.\n4-6: partial fit: Angular, React Native or a mostly backend role; 2+ years required;\nhybrid or office only.\n1-3: does not fit: middle or senior level; not JavaScript (.NET, Java, PHP, Python and so on);\nnot a developer role; salary clearly below $500.\nAdd 1 point (max 10) if the job involves n8n, workflow automation or AI integrations.`;\n\nconst OUTPUT_FORMAT = `Reply with JSON only, without markdown and without any other text. Fields:\n- \"score\": integer from 1 to 10\n- \"stack\": array of up to 6 key technologies from the vacancy\n- \"english\": required English level as a string, or null if not stated\n- \"salary\": salary as written in the vacancy, or null if not stated\n- \"summary\": one short sentence in Ukrainian about the company and the tasks`;\n\nfunction buildAiPrompt(vacancy, { profile = PROFILE } = {}) {\n  const title = String(vacancy?.title ?? '').trim();\n  const description = truncate(vacancy?.description, MAX_DESCRIPTION_LENGTH) || '(no description)';\n\n  return [\n    'You help a junior developer choose job vacancies. Rate how well the vacancy fits the candidate.',\n    '',\n    'CANDIDATE:',\n    profile,\n    '',\n    'HOW TO SCORE (1-10):',\n    SCORING,\n    '',\n    'VACANCY:',\n    `Title: ${title}`,\n    description,\n    '',\n    OUTPUT_FORMAT,\n  ].join('\\n');\n}\n\n// Array.from режет по символам, а не по половинкам эмодзи\nfunction truncate(text, maxLength) {\n  const chars = Array.from(String(text ?? '').trim());\n  if (chars.length <= maxLength) return chars.join('');\n  return `${chars.slice(0, maxLength - 1).join('').trimEnd()}…`;\n}\n// @include-end\n\n// --- «клей»: промпт для каждой вакансии ---\nreturn $input.all().map((item, index) => ({\n  json: { prompt: buildAiPrompt(item.json) },\n  pairedItem: index,\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        304
+      ],
+      "id": "8c440b1a-c180-40e0-b2e2-32b767bdc53a",
+      "name": "buildAiPrompt"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1040,
+        304
+      ],
+      "id": "b7e8ce16-a230-4c57-b22c-54ff323954a8",
+      "name": "askGemini",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        976,
+        512
+      ],
+      "id": "32851cb0-51a4-44f4-8167-b931fb335516",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "xsorGvR6uJnSaQ5c",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// @include-start parseAiResponse.js\n// Разбирает ответ Gemini. Модели иногда оборачивают JSON в ```json, пишут текст\n// до или после, путают типы полей. Функция достаёт JSON-объект, проверяет и чистит поля.\n// При любом сбое возвращает null: тогда вакансия уйдёт в Telegram без блока с оценкой.\nconst MAX_STACK_ITEMS = 6;\nconst MAX_FIELD_LENGTH = 100;\nconst MAX_SUMMARY_LENGTH = 300;\n\n// Так модели иногда пишут «нет данных» вместо null\nconst EMPTY_VALUES = new Set([\n  '', 'null', 'none', 'n/a', 'na', '-', 'unknown', 'not stated', 'not specified',\n  'не вказано', 'не указано',\n]);\n\nfunction parseAiResponse(text) {\n  const data = extractJsonObject(text);\n  if (!data) return null;\n\n  // Без оценки весь ответ бесполезен\n  const rawScore = typeof data.score === 'number' ? data.score : Number.parseFloat(data.score);\n  if (!Number.isFinite(rawScore)) return null;\n\n  return {\n    score: Math.min(Math.max(Math.round(rawScore), 1), 10),\n    stack: cleanStack(data.stack),\n    english: cleanText(data.english, MAX_FIELD_LENGTH),\n    salary: cleanText(data.salary, MAX_FIELD_LENGTH),\n    summary: cleanText(data.summary, MAX_SUMMARY_LENGTH),\n  };\n}\n\n// Сначала ищем блок ```json ... ```, потом берём текст от первой { до последней }\nfunction extractJsonObject(text) {\n  const raw = String(text ?? '');\n  const fenced = /```(?:json)?\\s*([\\s\\S]*?)```/i.exec(raw);\n  const candidate = fenced ? fenced[1] : raw;\n\n  const start = candidate.indexOf('{');\n  const end = candidate.lastIndexOf('}');\n  if (start === -1 || end <= start) return null;\n\n  try {\n    const data = JSON.parse(candidate.slice(start, end + 1));\n    return data && typeof data === 'object' && !Array.isArray(data) ? data : null;\n  } catch {\n    return null;\n  }\n}\n\n// Стек: массив или строка через запятую → до 6 непустых уникальных названий\nfunction cleanStack(value) {\n  const items = Array.isArray(value) ? value : String(value ?? '').split(',');\n  const result = [];\n  for (const item of items) {\n    const text = cleanText(item, MAX_FIELD_LENGTH);\n    if (text && !result.includes(text)) result.push(text);\n  }\n  return result.slice(0, MAX_STACK_ITEMS);\n}\n\n// Строка или число → строка без лишних пробелов; «нет данных» и всё остальное → null\nfunction cleanText(value, maxLength) {\n  if (typeof value !== 'string' && typeof value !== 'number') return null;\n  const text = String(value).replace(/\\s+/g, ' ').trim();\n  if (EMPTY_VALUES.has(text.toLowerCase())) return null;\n  return truncate(text, maxLength);\n}\n\nfunction truncate(text, maxLength) {\n  const chars = Array.from(text);\n  if (chars.length <= maxLength) return text;\n  return `${chars.slice(0, maxLength - 1).join('').trimEnd()}…`;\n}\n// @include-end\n\n// --- «клей» (режим Run Once for Each Item) ---\n// Цепочка LLM отдаёт только { text }, поэтому вакансию берём из Loop Over Items.\n// Если Gemini упал, text не будет, parseAiResponse вернёт null — вакансия уйдёт без оценки\nconst vacancy = $('Loop Over Items').item.json;\nconst ai = parseAiResponse($json.text);\n\nreturn { json: { id: vacancy.id, ai_score: ai?.score ?? null, ai_summary: ai } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        304
+      ],
+      "id": "61a73879-7489-4b37-93f0-1022d27828a6",
+      "name": "parseAiResponse"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE vacancies SET ai_score = $2, ai_summary = $3::jsonb WHERE id = $1 RETURNING *;",
+        "options": {
+          "queryReplacement": "={{ [ $json.id, $json.ai_score, $json.ai_summary ? JSON.stringify($json.ai_summary) : null ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1728,
+        400
+      ],
+      "id": "5597bc79-591a-4968-b778-7c5578ecfc09",
+      "name": "saveAi",
+      "credentials": {
+        "postgres": {
+          "id": "AOPUdAvB3WfS8Huw",
+          "name": "Postgres account"
+        }
+      }
     }
   ],
   "connections": {
@@ -289,7 +408,7 @@
         [],
         [
           {
-            "node": "buildMessage",
+            "node": "needsAi",
             "type": "main",
             "index": 0
           }
@@ -357,6 +476,79 @@
           }
         ]
       ]
+    },
+    "needsAi": {
+      "main": [
+        [
+          {
+            "node": "buildAiPrompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "buildMessage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buildAiPrompt": {
+      "main": [
+        [
+          {
+            "node": "askGemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "askGemini",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "askGemini": {
+      "main": [
+        [
+          {
+            "node": "parseAiResponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parseAiResponse": {
+      "main": [
+        [
+          {
+            "node": "saveAi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "saveAi": {
+      "main": [
+        [
+          {
+            "node": "buildMessage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -382,14 +574,14 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "874f9d9a-dbca-44b8-841b-c1706d9e6ab5",
+  "versionId": "519dd33f-4380-471f-9359-c229a30807ea",
   "activeVersionId": "874f9d9a-dbca-44b8-841b-c1706d9e6ab5",
-  "versionCounter": 77,
+  "versionCounter": 101,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],
   "versionMetadata": {
-    "name": "Version 1b490501",
-    "description": ""
+    "name": null,
+    "description": null
   }
 }
