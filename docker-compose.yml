@@ -1,0 +1,51 @@
+# Два контейнера в одной сети Docker:
+#   n8n      — оркестратор workflow (интерфейс: http://localhost:5678)
+#   postgres — наша база вакансий
+# Внутри сети контейнеры находят друг друга по имени сервиса:
+# из n8n база доступна по адресу postgres:5432 (а не localhost!).
+
+services:
+  n8n:
+    # stable — канал последнего стабильного релиза (раньше он назывался latest).
+    # После первого запуска замени stable на точный номер версии
+    # (узнать его: docker compose exec -T n8n n8n --version).
+    image: docker.n8n.io/n8nio/n8n:stable
+    restart: unless-stopped
+    ports:
+      - "5678:5678"                      # порт_на_твоём_ПК:порт_в_контейнере
+    environment:
+      - GENERIC_TIMEZONE=Europe/Kyiv     # часовой пояс для Schedule-нод n8n
+      - TZ=Europe/Kyiv                   # часовой пояс системы внутри контейнера
+      # Ключ шифрования credentials. Хвост ":?текст" внутри фигурных скобок значит:
+      # если переменной нет в .env, docker compose сразу остановится с этой ошибкой,
+      # а не запустит n8n со случайно сгенерированным ключом.
+      - "N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}"
+    volumes:
+      - n8n_data:/home/node/.n8n         # данные самого n8n: workflow, credentials, история запусков
+      - ./workflows:/workflows           # папка проекта <-> контейнер, для импорта/выгрузки через CLI
+    depends_on:
+      - postgres                         # задаёт только порядок старта, готовности базы не ждёт
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jobbot
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}"
+      POSTGRES_DB: jobbot
+    ports:
+      # Только для тебя: подключаться к базе из VS Code / DBeaver по localhost:5433.
+      # 127.0.0.1 — порт не виден другим устройствам в сети.
+      # 5433 — чтобы не конфликтовать с локальным PostgreSQL на 5432, если он у тебя стоит.
+      # n8n этот порт не использует: он ходит внутри сети Docker на postgres:5432.
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      # Скрипты из /docker-entrypoint-initdb.d Postgres выполняет ОДИН раз —
+      # при первом запуске, когда том pg_data пустой.
+      # Поэтому db/init.sql должен существовать до первого docker compose up.
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  n8n_data:
+  pg_data:
