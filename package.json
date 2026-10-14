@@ -1,0 +1,11 @@
+{
+  "name": "djinni-job-bot",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "wf:export": "docker compose exec -T n8n n8n export:workflow --all --separate --pretty --output=/workflows"
+  },
+  "devDependencies": {
+    "jest": "^30.5.2"
+  }
+}
