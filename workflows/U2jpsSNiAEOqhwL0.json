@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-10-14T20:13:12.159Z",
+  "updatedAt": "2026-10-14T20:38:55.215Z",
   "createdAt": "2026-10-14T20:02:55.271Z",
   "id": "U2jpsSNiAEOqhwL0",
   "name": "telegram-buttons",
   "description": null,
-  "active": false,
+  "active": true,
   "isArchived": false,
   "nodes": [
     {
@@ -70,6 +70,67 @@
       ],
       "id": "01c1063d-6fa6-4453-b4d5-03d252df01b8",
       "name": "parseCallback"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/answerCallbackQuery",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=     {\n       \"callback_query_id\": \"{{ $('parseCallback').item.json.callbackQueryId }}\",\n       \"text\": \"{{ $('parseCallback').item.json.answerText }}\"\n     }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "37da2641-856d-42ff-9c21-8ed41be748d1",
+      "name": "answerCallbackQuery",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "   UPDATE vacancies SET status = $1 WHERE id = $2 RETURNING id, status;",
+        "options": {
+          "queryReplacement": "={{ [ $json.action, $json.vacancyId ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        896,
+        0
+      ],
+      "id": "7ddcba4a-5e26-4b46-b361-4dbfb59883e8",
+      "name": "updateStatus",
+      "credentials": {
+        "postgres": {
+          "id": "AOPUdAvB3WfS8Huw",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/editMessageReplyMarkup",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=  {\n    \"chat_id\": {{ $('parseCallback').item.json.chatId }},\n    \"message_id\": {{ $('parseCallback').item.json.messageId }},\n    \"reply_markup\": { \"inline_keyboard\": [] }\n  }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1344,
+        0
+      ],
+      "id": "23c9f24b-25df-441c-bf36-4a795a50d2fd",
+      "name": "removeButtons",
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -105,24 +166,75 @@
           }
         ]
       ]
+    },
+    "parseCallback": {
+      "main": [
+        [
+          {
+            "node": "updateStatus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "updateStatus": {
+      "main": [
+        [
+          {
+            "node": "answerCallbackQuery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "answerCallbackQuery": {
+      "main": [
+        [
+          {
+            "node": "removeButtons",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate"
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "PSWRsF1thakswBDY",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
-  "staticData": null,
-  "meta": null,
+  "staticData": {
+    "node:Schedule Trigger": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    },
+    "global": {
+      "lastUpdateId": 148371462
+    }
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "31e30bdb-c6c2-4bf5-b8de-dc323da91d22",
-  "activeVersionId": null,
-  "versionCounter": 16,
-  "triggerCount": 0,
+  "versionId": "824a3dce-2730-4a59-9723-3a00aaf72971",
+  "activeVersionId": "824a3dce-2730-4a59-9723-3a00aaf72971",
+  "versionCounter": 41,
+  "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [],
   "versionMetadata": {
-    "name": null,
-    "description": null
+    "name": "Version 824a3dce",
+    "description": ""
   }
 }
