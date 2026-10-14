@@ -5,7 +5,8 @@
     "test": "jest",
     "sync": "node scripts/sync-code.js",
     "wf:export": "node scripts/wf-export.js",
-    "wf:import": "node scripts/wf-import.js"
+    "wf:import": "node scripts/wf-import.js",
+    "ai:try": "node --env-file=.env scripts/gemini-try.js"
   },
   "devDependencies": {
     "jest": "^30.5.2"
