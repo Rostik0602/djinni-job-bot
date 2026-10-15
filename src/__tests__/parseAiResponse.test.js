@@ -1,6 +1,5 @@
 const { parseAiResponse } = require('../parseAiResponse');
 
-// Настоящий ответ Gemini 3.5 Flash-Lite из npm run ai:try
 const REAL_RESPONSE = `{
   "score": 4,
   "stack": [

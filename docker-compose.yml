@@ -1,39 +1,21 @@
-# Два контейнера в одной сети Docker:
-#   n8n      — оркестратор workflow (интерфейс: http://localhost:5678)
-#   postgres — наша база вакансий
-# Внутри сети контейнеры находят друг друга по имени сервиса:
-# из n8n база доступна по адресу postgres:5432 (а не localhost!).
-
 services:
   n8n:
-    # Версия закреплена: n8n обновляешь осознанно, меняя номер здесь.
-    # Узнать текущую версию: docker compose exec -T n8n n8n --version
     image: docker.n8n.io/n8nio/n8n:2.43.5
     restart: unless-stopped
     ports:
-      # Только 127.0.0.1: редактор n8n не виден из сети. На сервере открываем его
-      # через SSH-туннель, на ПК — как раньше, по http://localhost:5678
       - "127.0.0.1:5678:5678"
     environment:
-      - GENERIC_TIMEZONE=Europe/Kyiv     # часовой пояс для Schedule-нод n8n
-      - TZ=Europe/Kyiv                   # часовой пояс системы внутри контейнера
-      # Ключ шифрования credentials. Хвост ":?текст" внутри фигурных скобок значит:
-      # если переменной нет в .env, docker compose сразу остановится с этой ошибкой,
-      # а не запустит n8n со случайно сгенерированным ключом.
+      - GENERIC_TIMEZONE=Europe/Kyiv
+      - TZ=Europe/Kyiv
       - "N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}"
-      # Токен бота для HTTP-запросов к Telegram API (getUpdates и др.).
-      # Нода HTTP Request не умеет брать его из credential Telegram, поэтому он в .env.
       - "TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:?set TELEGRAM_BOT_TOKEN in .env}"
-      # Твой chat_id: куда бот шлёт вакансии и алерты. Не секрет, но и в публичный репозиторий незачем
       - "TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:?set TELEGRAM_CHAT_ID in .env}"
-      # В n8n 2.x выражения по умолчанию не видят переменные окружения.
-      # Открываем доступ, чтобы в URL можно было писать {{ $env.TELEGRAM_BOT_TOKEN }}
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
     volumes:
-      - n8n_data:/home/node/.n8n         # данные самого n8n: workflow, credentials, история запусков
-      - ./workflows:/workflows           # папка проекта <-> контейнер, для импорта/выгрузки через CLI
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/workflows
     depends_on:
-      - postgres                         # задаёт только порядок старта, готовности базы не ждёт
+      - postgres
 
   postgres:
     image: postgres:16
@@ -43,16 +25,9 @@ services:
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}"
       POSTGRES_DB: jobbot
     ports:
-      # Только для тебя: подключаться к базе из VS Code / DBeaver по localhost:5433.
-      # 127.0.0.1 — порт не виден другим устройствам в сети.
-      # 5433 — чтобы не конфликтовать с локальным PostgreSQL на 5432, если он у тебя стоит.
-      # n8n этот порт не использует: он ходит внутри сети Docker на postgres:5432.
       - "127.0.0.1:5433:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
-      # Скрипты из /docker-entrypoint-initdb.d Postgres выполняет ОДИН раз —
-      # при первом запуске, когда том pg_data пустой.
-      # Поэтому db/init.sql должен существовать до первого docker compose up.
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
 
 volumes:

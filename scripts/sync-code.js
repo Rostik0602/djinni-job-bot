@@ -1,7 +1,3 @@
-// Вставляет код из src/ в Code-ноды workflow между маркерами:
-//   // @include-start parseVacancy.js
-//   // @include-end
-// Строку module.exports при вставке убирает: она нужна только для Jest.
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -16,8 +12,8 @@ function readSource(fileName) {
     throw new Error(`Маркер ссылается на src/${fileName}, но такого файла нет`);
   }
   return fs.readFileSync(filePath, 'utf8')
-    .replace(/\r\n/g, '\n')                  // переносы строк Windows -> обычные
-    .replace(/^module\.exports\s*=.*$/m, '') // экспорт нужен только тестам
+    .replace(/\r\n/g, '\n')
+    .replace(/^module\.exports\s*=.*$/m, '')
     .trim();
 }
 
@@ -48,7 +44,6 @@ for (const file of files) {
     }
   }
 
-  // Файл переписываем, только если что-то изменилось: так в git нет лишних правок
   if (updated > 0) fs.writeFileSync(fullPath, `${JSON.stringify(workflow, null, 2)}\n`);
   console.log(`${file} («${workflow.name}»): обновлено нод ${updated}`);
 }

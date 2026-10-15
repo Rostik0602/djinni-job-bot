@@ -1,7 +1,4 @@
-// Собирает промпт для Gemini: профиль кандидата, правила оценки и текст вакансии.
-// Личных данных (имя, контакты, город, ссылки) здесь нет и быть не должно:
-// на бесплатном тарифе Google может использовать запросы для обучения, а файл лежит в git.
-const MAX_DESCRIPTION_LENGTH = 3000; // длинные описания режем, чтобы не тратить токены
+const MAX_DESCRIPTION_LENGTH = 3000;
 
 const PROFILE = `Junior Frontend Developer (React + TypeScript). No commercial experience yet.
 About 1.5 years of frontend practice, 1 year of it with React and TypeScript.
@@ -52,7 +49,6 @@ function buildAiPrompt(vacancy, { profile = PROFILE } = {}) {
   ].join('\n');
 }
 
-// Array.from режет по символам, а не по половинкам эмодзи
 function truncate(text, maxLength) {
   const chars = Array.from(String(text ?? '').trim());
   if (chars.length <= maxLength) return chars.join('');

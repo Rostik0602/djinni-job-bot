@@ -1,6 +1,5 @@
 const { parseCallback } = require('../parseCallback');
 
-// Так выглядит нажатие кнопки в ответе getUpdates (лишние поля убраны)
 function makeUpdate(data, queryOverrides = {}) {
   return {
     update_id: 100500,

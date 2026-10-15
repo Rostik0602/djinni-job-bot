@@ -1,9 +1,7 @@
 const { parseVacancy, toPlainText } = require('../parseVacancy');
 
-// Фиксированное «сейчас»: тесты не зависят от того, когда их запускают
 const NOW = new Date('2026-10-14T12:00:00.000Z');
 
-// Типичный item из ноды RSS Read; в тестах меняем только нужные поля
 function makeItem(overrides = {}) {
   return {
     title: '  Junior Frontend Developer (React)  ',
@@ -59,14 +57,14 @@ describe('parseVacancy', () => {
   });
 
   test('пропускает вакансии старше maxAgeHours', () => {
-    const item = makeItem({ isoDate: '2026-10-13T11:00:00.000Z' }); // 25 часов назад
+    const item = makeItem({ isoDate: '2026-10-13T11:00:00.000Z' });
     expect(parseVacancy(item, { now: NOW, maxAgeHours: 24 })).toBeNull();
     expect(parseVacancy(item, { now: NOW, maxAgeHours: 48 })).not.toBeNull();
   });
 
   test('по умолчанию окно — 24 часа', () => {
-    const fresh = makeItem({ isoDate: '2026-10-13T13:00:00.000Z' }); // 23 часа назад
-    const old = makeItem({ isoDate: '2026-10-13T11:00:00.000Z' });   // 25 часов назад
+    const fresh = makeItem({ isoDate: '2026-10-13T13:00:00.000Z' });
+    const old = makeItem({ isoDate: '2026-10-13T11:00:00.000Z' });
     expect(parseVacancy(fresh, { now: NOW })).not.toBeNull();
     expect(parseVacancy(old, { now: NOW })).toBeNull();
   });

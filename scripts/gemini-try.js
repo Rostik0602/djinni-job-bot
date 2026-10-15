@@ -1,7 +1,3 @@
-// Пробный прогон нашего промпта на настоящих вакансиях из базы — напрямую через Gemini API, без n8n.
-// Запуск:  npm run ai:try                  — две последние вакансии
-//          npm run ai:try -- 3 --show-prompt — три вакансии и показать промпт
-// Ключ берётся из .env (GEMINI_API_KEY), в коде и в git его нет. Модель меняется через GEMINI_MODEL.
 const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 const { buildAiPrompt } = require('../src/buildAiPrompt');
@@ -18,7 +14,6 @@ const COUNT = Math.min(Math.max(Number.parseInt(args.find((arg) => /^\d+$/.test(
 
 const headers = { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY };
 
-// Последние вакансии из нашей базы: psql внутри контейнера postgres отдаёт их одним JSON
 function latestVacancies(count) {
   const sql = `SELECT json_agg(v) FROM (SELECT id, title, description FROM vacancies ORDER BY published_at DESC LIMIT ${count}) v;`;
   const output = execFileSync(
@@ -29,7 +24,6 @@ function latestVacancies(count) {
   return JSON.parse(output.trim() || 'null') ?? [];
 }
 
-// Какие Flash-Lite модели доступны твоему ключу (точные названия для API)
 async function listLiteModels() {
   const list = await fetch(`${API}/models?pageSize=1000`, { headers }).then((r) => r.json());
   return (list.models ?? [])
@@ -37,7 +31,6 @@ async function listLiteModels() {
     .map((m) => m.name.replace('models/', ''));
 }
 
-// Только промпт, без JSON-режима: так же будет спрашивать нода Gemini в n8n
 async function ask(prompt) {
   const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
   const started = Date.now();

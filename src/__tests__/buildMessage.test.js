@@ -1,13 +1,12 @@
 const { buildMessage, formatPublishedAt } = require('../buildMessage');
 
-// Даты зимние: зимой Киев всегда UTC+2, тесты не зависят от перехода на летнее время
-const NOW = new Date('2026-01-15T13:00:00.000Z'); // 15:00 по Киеву
+const NOW = new Date('2026-01-15T13:00:00.000Z');
 
 const vacancy = {
   id: '852334',
   title: 'Front-end Developer (React)',
   url: 'https://djinni.co/jobs/852334-front-end-developer-react/',
-  published_at: '2026-01-15T12:01:00.000Z', // 14:01 по Киеву
+  published_at: '2026-01-15T12:01:00.000Z',
   ai_score: null,
   ai_summary: null,
 };
